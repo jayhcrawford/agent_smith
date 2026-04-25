@@ -15,6 +15,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     openssh-client \
     python3 \
     python3-pip \
+    python3-yaml \
     tmux \
     sudo \
     jq \
@@ -22,8 +23,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Add non-root user for running agents
 RUN useradd -ms /bin/bash agent && echo "agent ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
-USER agent
-WORKDIR /home/agent
 
 # Copy supervisor + scripts into image
 COPY --chown=agent:agent supervisor /agent_smith/supervisor
@@ -31,10 +30,10 @@ COPY --chown=agent:agent scripts /agent_smith/scripts
 COPY --chown=agent:agent docker/entrypoint.sh /agent_smith/entrypoint.sh
 
 # Workspace mount point (bind mount from host)
-RUN mkdir -p /agents/workspace
+RUN mkdir -p /agents/workspace && chown -R agent:agent /agents
 VOLUME /agents/workspace
 
-# Install Python deps for supervisor (none yet, placeholder)
-RUN pip3 install --user --no-cache-dir pyyaml
+USER agent
+WORKDIR /home/agent
 
 ENTRYPOINT ["/agent_smith/entrypoint.sh"]
