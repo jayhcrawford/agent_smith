@@ -1,9 +1,7 @@
 # Agent Smith supervisor configuration
 workspace_root: /agents/workspace
-agent_binary: openclaw
-agent_args:
-  - "--thinking=low"
-  - "--session-timeout=7200"
+agent_binary: /agent_smith/scripts/dummy_agent.sh
+agent_args: []
 default_environment:
   GIT_SSH_COMMAND: "ssh -i /agents/keys/id_ed25519 -o StrictHostKeyChecking=no"
 resource_limits:

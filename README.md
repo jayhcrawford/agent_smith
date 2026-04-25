@@ -73,3 +73,11 @@ cd docker
 
 ## Status
 Early concept stage. README captures intent, constraints, and rough layout so we can start stubbing in Docker + supervisor code next.
+
+## Testing the Skeleton
+Until real agents are wired up, the container launches the dummy script `scripts/dummy_agent.sh`.
+It writes heartbeats to `workspace/agent-*/agent.log`. Build + run:
+```bash
+./scripts/start_agents.sh
+```
+Adjust `AGENT_COUNT` env var to scale. Add/remove scripts are stubbed; supervisor will log signals once IPC is implemented.

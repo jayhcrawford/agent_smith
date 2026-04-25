@@ -43,7 +43,9 @@ def start_agent(agent_dir: Path, cfg: dict) -> subprocess.Popen:
     # Placeholder command. Later this should invoke OpenClaw / custom agent runner.
     cmd = cfg.get("agent_binary", "bash")
     args = cfg.get("agent_args", [])
-    env = {**cfg.get("default_environment", {}), **dict(os.environ)}
+    env = {**os.environ, **cfg.get("default_environment", {})}
+    env['AGENT_NAME'] = f'agent-{agent_dir.name.split('-')[-1]}'
+    env['WORKSPACE'] = str(agent_dir)
 
     return subprocess.Popen(
         [cmd, *args],
