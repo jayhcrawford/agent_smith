@@ -18,7 +18,7 @@ Agent Smith is an A→Z toolkit for launching an isolated Docker container that 
 4. **Scaling**: CLI/API to add/remove agents on the fly without rebuilding or restarting the entire container.
 5. **Policy enforcement**: For tasks spanning multiple repos, agents must hand off to the coordinator (prevents conflicting commits and simplifies auditing).
 
-## Repo Layout (planned)
+## Repo Layout (in progress)
 ```
 agent_smith/
 ├─ docker/
