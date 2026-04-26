@@ -81,3 +81,10 @@ It writes heartbeats to `workspace/agent-*/agent.log`. Build + run:
 ./scripts/start_agents.sh
 ```
 Adjust `AGENT_COUNT` env var to scale. Add/remove scripts are stubbed; supervisor will log signals once IPC is implemented.
+
+## Watching Logs
+Inside the running container you can open a tmux session that tails every agent log:
+```bash
+docker exec -it agent-smith /agent_smith/scripts/watch_logs.sh
+```
+If a session already exists, the script just attaches. Exit tmux (Ctrl+b d) to detach.
