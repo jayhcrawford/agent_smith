@@ -1,22 +1,12 @@
 # Agent Smith
 
-Agent Smith is an A→Z toolkit for launching an isolated Docker container that can host multiple OpenClaw‑style agents at once. Each agent gets its own workspace inside the container, keeping the host machine clean while still allowing access to GitHub repositories via SSH or other auth methods.
+Agent Smith is an A→Z toolkit for launching an isolated Docker container that can host multiple OpenClaw-style agents at once. Each agent gets its own workspace inside the container, keeping the host machine clean while still allowing GitHub access via SSH or other auth methods.
 
 ## Goals
 - **Isolation:** Agents run inside a containerized environment separate from the host file system.
 - **Parallelism:** Spin up N agents (default 4) without juggling multiple VMs/containers.
-- **Safety:** No agent has unilateral authority to modify multiple repos at once; cross‑repo work requires explicit human coordination.
-- **Clarity:** Code and docs should be simple enough for humans to audit quickly (low token burn).
-
-## High-Level Concept
-1. **Docker image builds** the base environment (Debian/Ubuntu + dev tooling + OpenClaw dependencies).
-2. **Entry script** boots a supervisor that spawns the configured number of agents (default `AGENT_COUNT=4`).
-3. Each agent gets:
-   - A dedicated workspace directory (e.g., `/agents/agent-1`).
-   - SSH access (keys mounted or injected) for cloning GitHub repos.
-   - Resource limits to prevent runaway processes.
-4. **Scaling**: CLI/API to add/remove agents on the fly without rebuilding or restarting the entire container.
-5. **Policy enforcement**: For tasks spanning multiple repos, agents must hand off to the coordinator (prevents conflicting commits and simplifies auditing).
+- **Safety:** No agent has unilateral authority to modify multiple repos at once; cross-repo work requires explicit human coordination.
+- **Clarity:** Docs/scripts stay accurate so humans can audit quickly.
 
 ## Repo Layout (in progress)
 ```
@@ -25,66 +15,55 @@ agent_smith/
 │  ├─ Dockerfile              # Builds the container image
 │  ├─ entrypoint.sh           # Boots supervisor + agents
 ├─ scripts/
-│  ├─ start_agents.sh         # CLI wrapper for spinning up N agents
-│  ├─ add_agent.sh            # Adds a new agent instance at runtime
-│  ├─ remove_agent.sh         # Gracefully stops an agent
+│  ├─ start_agents.sh         # Build + run container (bind mounts workspace)
+│  ├─ add_agent.sh            # (stub) future IPC to add agents
+│  ├─ remove_agent.sh         # (stub) future IPC to remove agents
+│  ├─ dummy_agent.sh          # heartbeat logger used today
+│  └─ watch_logs.sh           # tmux tail of agent logs
 ├─ supervisor/
-│  ├─ config.yaml             # Agent definitions, resource caps
-│  ├─ supervisor.py           # Spawns/monitors individual agent processes
+│  ├─ config.yaml             # Agent binary/env settings
+│  ├─ supervisor.py           # Spawns placeholder agents
 ├─ workspace/
-│  └─ (created at runtime)    # Per-agent dirs mounted from host volume
-├─ README.md
-└─ TODO.md (or ROADMAP.md)
+│  └─ agent-*/agent.log       # Per-agent logs created at runtime
 ```
-> **Note:** directory names are placeholders; flesh them out as implementation lands.
 
 ## Runtime Flow
-1. `docker run -e AGENT_COUNT=4 agent_smith` → entrypoint boots supervisor.
-2. Supervisor spawns 4 agent processes, each launching OpenClaw (or another LLM agent framework) in its workspace.
-3. Agent clones `git@github.com:Org/repo.git` via mounted SSH key and executes the assigned tasks.
-4. Logs + artifacts stay inside the container unless explicitly exported/mounted.
-5. To add an agent: `docker exec agent_smith add_agent.sh` (increments count, allocates workspace).
+1. `./scripts/start_agents.sh` builds the Docker image and launches the container with `AGENT_COUNT` (default 4).
+2. Entrypoint runs `/agent_smith/supervisor/supervisor.py --agent-count $AGENT_COUNT`.
+3. Supervisor creates per-agent workspaces under `/agents/workspace/agent-{n}`.
+4. Dummy agents log heartbeats to `agent.log` in each workspace (real agent process to be wired later).
+5. Helper scripts will eventually add/remove agents via IPC; currently they stub out the signals.
 
-## Constraints / Policies
-- **One repo per agent**: simplifies troubleshooting and avoids merge conflicts.
-- **No cross-repo writes without coordinator approval**: if an agent needs changes in two repos, it must escalate.
-- **Human-auditable**: maintain `README`, `ROADMAP`, and `RISKS` docs so future contributors can reason quickly.
-
-## Roadmap
-- [ ] Draft detailed Dockerfile + base image.
-- [ ] Implement supervisor (process manager + health checks).
-- [ ] CLI for scaling agents up/down.
-- [ ] Workspace volume strategy (bind mount vs. named volumes).
-- [ ] Access control for SSH keys / GitHub tokens.
-- [ ] Observability (per-agent logs + metrics export).
-
-## Usage (future)
-```bash
-# Build image
-cd docker
-./build.sh
-
-# Run with default 4 agents
-./scripts/start_agents.sh
-
-# Add another agent on the fly
-./scripts/add_agent.sh
+## Quick Start
 ```
-
-## Status
-Early concept stage. README captures intent, constraints, and rough layout so we can start stubbing in Docker + supervisor code next.
-
-## Testing the Skeleton
-Until real agents are wired up, the container launches the dummy script `scripts/dummy_agent.sh`.
-It writes heartbeats to `workspace/agent-*/agent.log`. Build + run:
-```bash
-./scripts/start_agents.sh
+./scripts/start_agents.sh            # build + run, default 4 agents
+AGENT_COUNT=6 ./scripts/start_agents.sh
 ```
-Adjust `AGENT_COUNT` env var to scale. Add/remove scripts are stubbed; supervisor will log signals once IPC is implemented.
+- `workspace/` is bind-mounted into the container (agents write logs there).
+- Container stops when you CTRL+C the process.
 
 ## Watching Logs
-Inside the running container you can open a tmux session that tails every agent log:
-```bash
+Run from the host to attach to tmux tails inside the container:
+```
 docker exec -it agent-smith /agent_smith/scripts/watch_logs.sh
 ```
-If a session already exists, the script just attaches. Exit tmux (Ctrl+b d) to detach.
+This creates/attaches to a tmux session tailing `workspace/agent-*/agent.log`. Detach with `Ctrl+b d`.
+
+## Testing the Skeleton
+- Dummy agents (`scripts/dummy_agent.sh`) are what currently run; they only log heartbeats.
+- As we wire real agents, update `supervisor/config.yaml` to point to the correct binary.
+- Add/remove scripts are placeholders until supervisor IPC is implemented.
+
+## Constraints / Policies
+- One repo per agent. Cross-repo work must be coordinated manually.
+- No secrets in the repo; mount SSH keys/tokens at runtime.
+
+## Roadmap
+- [ ] Implement real agent entry command (OpenClaw) + environment bootstrap.
+- [ ] Flesh out supervisor IPC for `add/remove` commands.
+- [ ] Handle SSH key injection (volume or secrets).
+- [ ] Observability: structured logs, metrics, health endpoints.
+- [ ] Windows/WSL guidance (CRLF vs LF).
+
+## Status
+Skeleton container works with dummy agents; log watcher script available. More wiring to come.
