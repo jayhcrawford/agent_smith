@@ -2,7 +2,7 @@
 # Build + run the Agent Smith container locally.
 set -euo pipefail
 
-AGENT_COUNT=${AGENT_COUNT:-4}
+AGENT_COUNT=${AGENT_COUNT:-10}
 IMAGE=${IMAGE:-agent_smith:dev}
 CONTAINER=${CONTAINER:-agent-smith}
 WORKSPACE=${WORKSPACE:-$(pwd)/workspace}

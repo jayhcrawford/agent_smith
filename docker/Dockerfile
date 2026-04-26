@@ -5,7 +5,7 @@ FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive \
     TZ=UTC \
-    AGENT_COUNT=4
+    AGENT_COUNT=10
 
 # Install OS packages (curl/git/python/etc.)
 RUN apt-get update && apt-get install -y --no-install-recommends \

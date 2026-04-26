@@ -21,7 +21,7 @@ import yaml
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Agent Smith supervisor")
     parser.add_argument("--config", default="/agent_smith/supervisor/config.yaml")
-    parser.add_argument("--agent-count", type=int, default=4)
+    parser.add_argument("--agent-count", type=int, default=10)
     parser.add_argument("--signal", choices=["add", "remove"], default=None)
     parser.add_argument("--count", type=int, default=1,
                         help="Used with --signal to add/remove agents")
